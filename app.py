@@ -1,0 +1,133 @@
+import streamlit as st
+import altair as alt
+import requests
+import pandas as pd
+import plotly_express as px
+import numpy as np
+
+
+def main():
+
+# Set configs
+    st.set_page_config(
+	layout="wide",  # Can be "centered" or "wide". In the future also "dashboard", etc.
+	initial_sidebar_state="collapsed",  # Can be "auto", "expanded", "collapsed"
+	page_title='LiguedDatas App',  # String or None. Strings get appended with "• Streamlit". 
+	page_icon=None,  # String, anything supported by st.image, or None.
+    )
+
+# Load Data
+    df = Please_wait_load_data()
+
+# Set Sidebar
+    st.sidebar.title('Navigation onglet')
+    page = st.sidebar.selectbox("Choose a page", ["Homepage", "Exploration"])
+    st.sidebar.title('Generals filters')
+    sel_country = st.sidebar.multiselect('Select country', sorted(df['Nation'].unique()))
+    sel_league = st.sidebar.multiselect('Select league', sorted(df['Comp'].unique()))
+    sel_team = st.sidebar.multiselect('Select team', sorted(df['Squad'].unique()))
+    sel_player = st.sidebar.multiselect('Select player', sorted(df['Player']))
+    slider_games = st.sidebar.slider('Played Minutes', df['90s'].min(), df['90s'].max(),(df['90s'].min(), df['90s'].max()))
+
+# Configure generals filters
+    if len(sel_country) == 0:
+        df_country = df
+    elif len(sel_country) != 0:
+        df_country = df[df['Nation'].isin(sel_country)]
+    
+    if len(sel_league) == 0:
+        df_league = df
+    elif len(sel_league) != 0:
+        df_league = df[df['Comp'].isin(sel_league)]
+
+    if len(sel_team) == 0:
+        df_team = df
+    elif len(sel_team) != 0:
+        df_team = df[df['Squad'].isin(sel_team)]
+
+    if len(sel_player) == 0:
+        df_player = df
+    elif len(sel_player) != 0:
+        df_player = df[df['Player'].isin(sel_player)]
+
+    df_games = df[df['90s'].between(slider_games[0],slider_games[1])]
+
+    general_select = df[df.isin(df_country) & df.isin(df_league) & df.isin(df_team) & df.isin(df_player) & df.isin(df_games)].dropna()
+
+
+    
+# Page 1
+    if page == "Homepage":
+        st.markdown("<h1 style='text-align: center; color: black;'>Interractive dashboard for Football</h1>", unsafe_allow_html=True)
+        st.write("\n")
+        st.write("Made by LiguedDatas")
+        st.image('https://scontent-cdg2-1.cdninstagram.com/v/t51.2885-19/s320x320/96128303_611529572778597_793532226259124224_n.jpg?_nc_ht=scontent-cdg2-1.cdninstagram.com&_nc_ohc=WujEu6roSV4AX8XlRGm&tp=1&oh=4d41280fdc2f1e063176516dce5d70dc&oe=5FEEAB89')
+        st.write("Instagram : https://www.instagram.com/ligueddatas/")
+
+# Page 2    
+    elif page == "Exploration":
+        st.title("Data Exploration")
+        x_axis = st.selectbox("Choose a variable for the x-axis", df.columns, index=11)
+        y_axis = st.selectbox("Choose a variable for the y-axis", df.columns, index=12)
+        slider_x_explore = st.slider(x_axis, general_select[x_axis].min(), general_select[x_axis].max(),(general_select[x_axis].min(), general_select[x_axis].max()))
+        explore_df = general_select[general_select[x_axis].between(slider_x_explore[0],slider_x_explore[1])]
+        scatter_plot(explore_df, x_axis, y_axis)
+        st.write(explore_df)
+        
+
+
+def load_data(url, information):
+    html = requests.get(url).content
+    df_list = pd.read_html(html)
+    df = df_list[0]
+    col_names = []
+    for i in range(len(df.columns)):
+        col_names.append((df.columns[i][1]))
+    df.columns = col_names
+    df = df[df['Rk'] != 'Rk'] # Remove headlines
+    df = df.set_index('Rk') # Define id
+    df = df.drop(labels=['Born','Matches'], axis=1) # Remove last column
+    info = df.iloc[:,:7] # Keep information players 
+    info.Player = info.Player.str.encode("latin1").str.decode("utf-8",errors='replace') # Encode Player
+    info.Squad = info.Squad.str.encode("latin1").str.decode("utf-8",errors='replace') # Encode Squad
+    info.Age = info.Age.str.replace('-','.').astype(float) # Clean Age
+    info['90s'] = info['90s'].astype(float)
+    values = df.iloc[:,7:].astype(float) # Select values as float
+    values = values.fillna(0) # Replace NaN to 0
+    if information == True:
+        return info
+    else: 
+        return values
+
+@st.cache
+def Please_wait_load_data():
+    info = load_data('https://widgets.sports-reference.com/wg.fcgi?css=1&site=fb&url=%2Fen%2Fcomps%2FBig5%2Fshooting%2Fplayers%2FBig-5-European-Leagues-Stats&div=div_stats_shooting', information = True)
+    shot = load_data('https://widgets.sports-reference.com/wg.fcgi?css=1&site=fb&url=%2Fen%2Fcomps%2FBig5%2Fshooting%2Fplayers%2FBig-5-European-Leagues-Stats&div=div_stats_shooting', information = False).iloc[:,:8].drop(labels=['Sh/90', 'SoT/90'], axis=1)
+    passes = load_data('https://widgets.sports-reference.com/wg.fcgi?css=1&site=fb&url=%2Fen%2Fcomps%2FBig5%2Fpassing%2Fplayers%2FBig-5-European-Leagues-Stats&div=div_stats_passing', information = False).drop(labels=['Ast', 'xA', 'A-xA'], axis=1)
+    creation = load_data('https://widgets.sports-reference.com/wg.fcgi?css=1&site=fb&url=%2Fen%2Fcomps%2FBig5%2Fgca%2Fplayers%2FBig-5-European-Leagues-Stats&div=div_stats_gca', information = False).drop(labels=['SCA90','Sh', 'Fld', 'Def','GCA90','OG'], axis=1)
+    defense = load_data('https://widgets.sports-reference.com/wg.fcgi?css=1&site=fb&url=%2Fen%2Fcomps%2FBig5%2Fdefense%2Fplayers%2FBig-5-European-Leagues-Stats&div=div_stats_defense', information = False).loc[:,['Tkl', 'TklW', 'Press', 'Succ', '%', 'Int']]
+    dribble = load_data('https://widgets.sports-reference.com/wg.fcgi?css=1&site=fb&url=%2Fen%2Fcomps%2FBig5%2Fpossession%2Fplayers%2FBig-5-European-Leagues-Stats&div=div_stats_possession', information = False).loc[:,['Touches', 'Succ', 'Att', 'Succ%', 'Carries', 'TotDist', 'PrgDist']]
+    fun = load_data('https://widgets.sports-reference.com/wg.fcgi?css=1&site=fb&url=%2Fen%2Fcomps%2FBig5%2Fmisc%2Fplayers%2FBig-5-European-Leagues-Stats&div=div_stats_misc', information = False).loc[:,['CrdY', 'CrdR', 'Fls', 'Fld', 'Crs', 'Won', 'Lost', 'Won%']]
+    df = pd.concat([info, shot, passes, creation, dribble, defense, fun], axis=1)
+    df.columns = ['Player', 'Nation', 'Pos', 'Squad', 'Comp', 'Age', '90s',
+              'Gls', 'Sh', 'SoT', 'SoT%', 'G/Sh', 'G/SoT',
+              'Pass_Cmp', 'Pass_Att', 'Pass_Cmp%', 'TotDist', 'PrgDist', 'sCmp', 'sAtt', 'sCmp%', 'sCmp', 'sAtt', 'sCmp%', 'sCmp', 'sAtt', 'sCmp%', 'KP', '1/3', 'PPA', 'CrsPA', 'Prog',
+              'SCA', 'SCA_PassLive', 'SCA_PassDead', 'SCA_Drib', 'GCA', 'GCA_PassLive', 'GCA_PassDead', 'GCA_Drib',
+              'Touches', 'Drib_Succ', 'Drib_Att', 'Drib_Succ%', 'Carries', 'Drib_TotDist', 'Drib_PrgDist',
+              'Tkl', 'sTkl', 'TklW', 'Press', 'Press_Succ', 'Press_Succ%', 'Int', 
+              'CrdY', 'CrdR', 'Fls', 'Fld', 'Crs', 'Aerial_Won', 'Aerial_Lost', 'Aerial_Won%']
+    df = df.drop(labels=['sCmp', 'sAtt', 'sCmp%', 'sTkl'], axis=1)
+    return df
+
+def scatter_plot(df, x_axis, y_axis):
+    graph = px.scatter(df, x = x_axis, y = y_axis,
+    text = 'Player', 
+    hover_name="Player",
+    template = "simple_white",
+    )
+    graph.update_layout(uniformtext_minsize=8, uniformtext_mode='hide')
+
+    st.write(graph)
+
+if __name__ == "__main__":
+    main()
