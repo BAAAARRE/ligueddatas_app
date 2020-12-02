@@ -29,7 +29,10 @@ def main():
     sel_team = st.sidebar.multiselect('Select team', sorted(df['Squad'].unique()))
     sel_player = st.sidebar.multiselect('Select player', sorted(df['Player']))
     slider_games = st.sidebar.slider('Played Minutes', float(df['90s'].min()), float(df['90s'].max()), (float(df['90s'].min()), float(df['90s'].max())))
+    st.sidebar.title('Graphics options')
+    st.sidebar.write('\n')
     check_label = st.sidebar.checkbox('With labels')
+    by_color = st.sidebar.selectbox('Color by', ['None', 'Nation', 'Comp', 'Squad'])
 
 # Configure generals filters
     if len(sel_country) == 0:
@@ -68,13 +71,13 @@ def main():
         st.title("Defense")
         st.write("\n")
         st.header("Tackle")
-        explore_df = slide_scatter(general_select, 'Tkl', 'TklW', check_label)
+        explore_df = slide_scatter(general_select, 'Tkl', 'TklW', check_label, by_color)
         st.write("\n")
         st.header("Pressing")
-        explore_df = slide_scatter(general_select, 'Press_Succ%', 'Press', check_label)
+        explore_df = slide_scatter(general_select, 'Press_Succ%', 'Press', check_label, by_color)
         st.write("\n")
         st.header("Aerial Duels")
-        explore_df = slide_scatter(general_select, 'Aerial_Won%', 'Aerial_Won', check_label)
+        explore_df = slide_scatter(general_select, 'Aerial_Won%', 'Aerial_Won', check_label, by_color)
 	
 
 # Page 3    
@@ -82,7 +85,7 @@ def main():
         st.title("Data Exploration")
         x_axis = st.selectbox("Choose a variable for the x-axis", df.columns, index=11)
         y_axis = st.selectbox("Choose a variable for the y-axis", df.columns, index=12)
-        explore_df = slide_scatter(general_select, x_axis, y_axis, check_label)
+        explore_df = slide_scatter(general_select, x_axis, y_axis, check_label, by_color)
         st.write(explore_df)
 	
 	
@@ -133,7 +136,7 @@ def Please_wait_load_data():
               'Tkl', 'sTkl', 'TklW', 'Press', 'Press_Succ', 'Press_Succ%', 'Int', 
               'CrdY', 'CrdR', 'Fls', 'Fld', 'Crs', 'Aerial_Won', 'Aerial_Lost', 'Aerial_Won%']
     df = df.drop(labels=['sCmp', 'sAtt', 'sCmp%', 'sTkl'], axis=1)
-    df["Labels"] = ""
+    df["None"] = ""
     return df
 
 def multi_filter(df, sel, var):
@@ -144,17 +147,18 @@ def multi_filter(df, sel, var):
     return df_sel
 
 
-def scatter_plot(df, x_axis, y_axis, label):
+def scatter_plot(df, x_axis, y_axis, label, color):
     graph = px.scatter(df, x = x_axis, y = y_axis,
     text = label, 
     hover_name="Player",
+    color = color,
     template = "simple_white",
     )
     graph.update_traces(textposition='top center')
 
     st.write(graph)
 
-def slide_scatter(df, x_axis, y_axis, check):
+def slide_scatter(df, x_axis, y_axis, check, color_choice):
     if len(df) == 1:
         slider_x_explore = st.slider(x_axis, float(df[x_axis].min()), float(df[x_axis].max()+1), (float(df[x_axis].min()), float(df[x_axis].max())))
         slider_y_explore = st.slider(y_axis, float(df[y_axis].min()), float(df[y_axis].max()+1), (float(df[y_axis].min()), float(df[y_axis].max())))
@@ -168,9 +172,9 @@ def slide_scatter(df, x_axis, y_axis, check):
     if len(df) != 0:
         explore_df = df[df[x_axis].between(slider_x_explore[0],slider_x_explore[1]) & df[y_axis].between(slider_y_explore[0],slider_y_explore[1])]
         if check == False:
-            scatter_plot(explore_df, x_axis, y_axis, label = 'Labels')
+            scatter_plot(explore_df, x_axis, y_axis, label = 'None', color = color_choice)
         else:
-            scatter_plot(explore_df, x_axis, y_axis, label = 'Player')
+            scatter_plot(explore_df, x_axis, y_axis, label = 'Player', color = color_choice)
         
         with st.beta_expander("See data"):
             st.write(explore_df[['Player', x_axis, y_axis]])
