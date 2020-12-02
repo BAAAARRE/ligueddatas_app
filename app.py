@@ -28,7 +28,7 @@ def main():
     sel_league = st.sidebar.multiselect('Select league', sorted(df['Comp'].unique()))
     sel_team = st.sidebar.multiselect('Select team', sorted(df['Squad'].unique()))
     sel_player = st.sidebar.multiselect('Select player', sorted(df['Player']))
-    slider_games = st.sidebar.slider('Played Minutes', df['90s'].min(), df['90s'].max(),(df['90s'].min(), df['90s'].max()))
+    slider_games = st.sidebar.slider('Played Minutes', float(df['90s'].min()), float(df['90s'].max()), (float(df['90s'].min()), float(df['90s'].max())))
     check_label = st.sidebar.checkbox('With labels')
 
 # Configure generals filters
