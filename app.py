@@ -22,7 +22,7 @@ def main():
 
 # Set Sidebar
     st.sidebar.title('Navigation onglet')
-    page = st.sidebar.selectbox("Choose a page", ["Homepage", "Exploration", "Defense"])
+    page = st.sidebar.selectbox("Choose a page", ["Homepage", "Defense", "Exploration"])
     st.sidebar.title('Generals filters')
     sel_country = st.sidebar.multiselect('Select country', sorted(df['Nation'].unique()))
     sel_league = st.sidebar.multiselect('Select league', sorted(df['Comp'].unique()))
@@ -60,18 +60,10 @@ def main():
         st.title('Interractive dashboard for Football ⚽')
         st.write("\n")
         st.write('You can navigate on page with the sidebar on the left')
-        
-
-# Page 2    
-    elif page == "Exploration":
-        st.title("Data Exploration")
-        x_axis = st.selectbox("Choose a variable for the x-axis", df.columns, index=11)
-        y_axis = st.selectbox("Choose a variable for the y-axis", df.columns, index=12)
-        explore_df = slide_scatter(general_select, x_axis, y_axis, check_label)
-        st.write(explore_df)
 
 
-# Page 3
+
+# Page 2
     elif page == "Defense":
         st.title("Defense")
         st.write("\n")
@@ -83,8 +75,17 @@ def main():
         st.write("\n")
         st.header("Aerial Duels")
         explore_df = slide_scatter(general_select, 'Aerial_Won%', 'Aerial_Won', check_label)
+	
 
-
+# Page 3    
+    elif page == "Exploration":
+        st.title("Data Exploration")
+        x_axis = st.selectbox("Choose a variable for the x-axis", df.columns, index=11)
+        y_axis = st.selectbox("Choose a variable for the y-axis", df.columns, index=12)
+        explore_df = slide_scatter(general_select, x_axis, y_axis, check_label)
+        st.write(explore_df)
+	
+	
 # Bottom page
     st.write("\n") 
     st.write("\n")
