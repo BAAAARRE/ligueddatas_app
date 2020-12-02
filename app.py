@@ -88,7 +88,7 @@ def main():
 # Bottom page
     st.write("\n") 
     st.write("\n")
-    st.info("""By : [Ligue des Datas](https://www.instagram.com/ligueddatas/) | Source : [GitHub](https://github.com/BAAAARRE/ligueddatas_app) | Data source : [Sport Reference Data](https://www.sports-reference.com/)""")
+    st.info("""By : Ligue des Datas [Instagram](https://www.instagram.com/ligueddatas/) [Twitter](https://twitter.com/ligueddatas) | Source : [GitHub](https://github.com/BAAAARRE/ligueddatas_app) | Data source : [Sport Reference Data](https://www.sports-reference.com/)""")
 
 
 def load_data(url, information):
