@@ -4,6 +4,7 @@ import requests
 import pandas as pd
 import plotly_express as px
 import numpy as np
+import lxml
 
 
 def main():
