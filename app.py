@@ -161,8 +161,8 @@ def slide_scatter(df, x_axis, y_axis, check):
         st.write('\n')
         st.error('Error yours filters are incompatibles')
     else:
-        slider_x_explore = st.slider(x_axis, float(df[x_axis].min(), float(df[x_axis].max(), float((df[x_axis].min(), df[x_axis].max()))
-        slider_y_explore = st.slider(y_axis, float(df[y_axis].min(), float(df[y_axis].max(), float((df[y_axis].min(), df[y_axis].max()))
+        slider_x_explore = st.slider(x_axis, float(df[x_axis].min()), float(df[x_axis].max(), float((df[x_axis].min()), float(df[x_axis].max())))
+        slider_y_explore = st.slider(y_axis, float(df[y_axis].min()), float(df[y_axis].max(), float((df[y_axis].min()), float(df[y_axis].max())))
 
     if len(df) != 0:
         explore_df = df[df[x_axis].between(slider_x_explore[0],slider_x_explore[1]) & df[y_axis].between(slider_y_explore[0],slider_y_explore[1])]
