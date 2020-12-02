@@ -11,8 +11,8 @@ def main():
 
 # Set configs
     st.set_page_config(
-	layout="wide",  # Can be "centered" or "wide". In the future also "dashboard", etc.
-	initial_sidebar_state="collapsed",  # Can be "auto", "expanded", "collapsed"
+	layout="centered",  # Can be "centered" or "wide". In the future also "dashboard", etc.
+	initial_sidebar_state="auto",  # Can be "auto", "expanded", "collapsed"
 	page_title='LiguedDatas App',  # String or None. Strings get appended with "• Streamlit". 
 	page_icon=None,  # String, anything supported by st.image, or None.
     )
@@ -22,13 +22,14 @@ def main():
 
 # Set Sidebar
     st.sidebar.title('Navigation onglet')
-    page = st.sidebar.selectbox("Choose a page", ["Homepage", "Exploration"])
+    page = st.sidebar.selectbox("Choose a page", ["Homepage", "Exploration", "Defense"])
     st.sidebar.title('Generals filters')
     sel_country = st.sidebar.multiselect('Select country', sorted(df['Nation'].unique()))
     sel_league = st.sidebar.multiselect('Select league', sorted(df['Comp'].unique()))
     sel_team = st.sidebar.multiselect('Select team', sorted(df['Squad'].unique()))
     sel_player = st.sidebar.multiselect('Select player', sorted(df['Player']))
     slider_games = st.sidebar.slider('Played Minutes', df['90s'].min(), df['90s'].max(),(df['90s'].min(), df['90s'].max()))
+    check_label = st.sidebar.checkbox('With labels')
 
 # Configure generals filters
     if len(sel_country) == 0:
@@ -46,10 +47,7 @@ def main():
     elif len(sel_team) != 0:
         df_team = df[df['Squad'].isin(sel_team)]
 
-    if len(sel_player) == 0:
-        df_player = df
-    elif len(sel_player) != 0:
-        df_player = df[df['Player'].isin(sel_player)]
+    df_player = multi_filter(df, sel_player, 'Player')
 
     df_games = df[df['90s'].between(slider_games[0],slider_games[1])]
 
@@ -59,22 +57,38 @@ def main():
     
 # Page 1
     if page == "Homepage":
-        st.markdown("<h1 style='text-align: center; color: black;'>Interractive dashboard for Football</h1>", unsafe_allow_html=True)
+        st.title('Interractive dashboard for Football ⚽')
         st.write("\n")
-        st.write("Made by LiguedDatas")
-        st.image('https://scontent-cdg2-1.cdninstagram.com/v/t51.2885-19/s320x320/96128303_611529572778597_793532226259124224_n.jpg?_nc_ht=scontent-cdg2-1.cdninstagram.com&_nc_ohc=WujEu6roSV4AX8XlRGm&tp=1&oh=4d41280fdc2f1e063176516dce5d70dc&oe=5FEEAB89')
-        st.write("Instagram : https://www.instagram.com/ligueddatas/")
+        st.write('You can navigate on page with the sidebar on the left')
+        
 
 # Page 2    
     elif page == "Exploration":
         st.title("Data Exploration")
         x_axis = st.selectbox("Choose a variable for the x-axis", df.columns, index=11)
         y_axis = st.selectbox("Choose a variable for the y-axis", df.columns, index=12)
-        slider_x_explore = st.slider(x_axis, general_select[x_axis].min(), general_select[x_axis].max(),(general_select[x_axis].min(), general_select[x_axis].max()))
-        explore_df = general_select[general_select[x_axis].between(slider_x_explore[0],slider_x_explore[1])]
-        scatter_plot(explore_df, x_axis, y_axis)
+        explore_df = slide_scatter(general_select, x_axis, y_axis, check_label)
         st.write(explore_df)
-        
+
+
+# Page 3
+    elif page == "Defense":
+        st.title("Defense")
+        st.write("\n")
+        st.header("Tackle")
+        explore_df = slide_scatter(general_select, 'Tkl', 'TklW', check_label)
+        st.write("\n")
+        st.header("Pressing")
+        explore_df = slide_scatter(general_select, 'Press_Succ%', 'Press', check_label)
+        st.write("\n")
+        st.header("Aerial Duels")
+        explore_df = slide_scatter(general_select, 'Aerial_Won%', 'Aerial_Won', check_label)
+
+
+# Bottom page
+    st.write("\n") 
+    st.write("\n")
+    st.info("""By : [Ligue des Datas](https://www.instagram.com/ligueddatas/) | Source : [GitHub](https://github.com/BAAAARRE/ligueddatas_app) | Data source : [Sport Reference Data](https://www.sports-reference.com/)""")
 
 
 def load_data(url, information):
@@ -118,17 +132,50 @@ def Please_wait_load_data():
               'Tkl', 'sTkl', 'TklW', 'Press', 'Press_Succ', 'Press_Succ%', 'Int', 
               'CrdY', 'CrdR', 'Fls', 'Fld', 'Crs', 'Aerial_Won', 'Aerial_Lost', 'Aerial_Won%']
     df = df.drop(labels=['sCmp', 'sAtt', 'sCmp%', 'sTkl'], axis=1)
+    df["Labels"] = ""
     return df
 
-def scatter_plot(df, x_axis, y_axis):
+def multi_filter(df, sel, var):
+    if len(sel) == 0:
+        df_sel = df
+    elif len(sel) != 0:
+        df_sel = df[df[var].isin(sel)]
+    return df_sel
+
+
+def scatter_plot(df, x_axis, y_axis, label):
     graph = px.scatter(df, x = x_axis, y = y_axis,
-    text = 'Player', 
+    text = label, 
     hover_name="Player",
     template = "simple_white",
     )
-    graph.update_layout(uniformtext_minsize=8, uniformtext_mode='hide')
+    graph.update_traces(textposition='top center')
 
     st.write(graph)
+
+def slide_scatter(df, x_axis, y_axis, check):
+    if len(df) == 1:
+        slider_x_explore = st.slider(x_axis, float(df[x_axis].min()), float(df[x_axis].max()+1), float((df[x_axis].min()), float(df[x_axis].max())))
+        slider_y_explore = st.slider(y_axis, float(df[y_axis].min()), float(df[y_axis].max()+1), float((df[y_axis].min()), float(df[y_axis].max())))
+    elif len(df) == 0:
+        st.write('\n')
+        st.error('Error yours filters are incompatibles')
+    else:
+        slider_x_explore = st.slider(x_axis, df[x_axis].min(), df[x_axis].max(),(df[x_axis].min(), df[x_axis].max()))
+        slider_y_explore = st.slider(y_axis, df[y_axis].min(), df[y_axis].max(),(df[y_axis].min(), df[y_axis].max()))
+
+    if len(df) != 0:
+        explore_df = df[df[x_axis].between(slider_x_explore[0],slider_x_explore[1]) & df[y_axis].between(slider_y_explore[0],slider_y_explore[1])]
+        if check == False:
+            scatter_plot(explore_df, x_axis, y_axis, label = 'Labels')
+        else:
+            scatter_plot(explore_df, x_axis, y_axis, label = 'Player')
+        
+        with st.beta_expander("See data"):
+            st.write(explore_df[['Player', x_axis, y_axis]])
+        return explore_df
+
+
 
 if __name__ == "__main__":
     main()
