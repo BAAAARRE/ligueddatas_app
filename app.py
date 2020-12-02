@@ -25,34 +25,22 @@ def main():
     page = st.sidebar.selectbox("Choose a page", ["Homepage", "Defense", "Exploration"])
     st.sidebar.title('Generals filters')
     sel_country = st.sidebar.multiselect('Select country', sorted(df['Nation'].unique()))
-    sel_league = st.sidebar.multiselect('Select league', sorted(df['Comp'].unique()))
+    sel_league = st.sidebar.multiselect('Select league', sorted(df['League'].unique()))
     sel_team = st.sidebar.multiselect('Select team', sorted(df['Squad'].unique()))
     sel_player = st.sidebar.multiselect('Select player', sorted(df['Player']))
-    slider_games = st.sidebar.slider('Played Minutes', float(df['90s'].min()), float(df['90s'].max()), (float(df['90s'].min()), float(df['90s'].max())))
+    slider_games = st.sidebar.slider('Played Minutes', float(df['Minutes played divided by 90'].min()), float(df['Minutes played divided by 90'].max()), (float(df['Minutes played divided by 90'].min()), float(df['Minutes played divided by 90'].max())))
     st.sidebar.title('Graphics options')
     st.sidebar.write('\n')
     check_label = st.sidebar.checkbox('With labels')
-    by_color = st.sidebar.selectbox('Color by', ['None', 'Nation', 'Comp', 'Squad'])
+    by_color = st.sidebar.selectbox('Color by', ['None', 'Nation', 'League', 'Squad'])
 
 # Configure generals filters
-    if len(sel_country) == 0:
-        df_country = df
-    elif len(sel_country) != 0:
-        df_country = df[df['Nation'].isin(sel_country)]
-    
-    if len(sel_league) == 0:
-        df_league = df
-    elif len(sel_league) != 0:
-        df_league = df[df['Comp'].isin(sel_league)]
-
-    if len(sel_team) == 0:
-        df_team = df
-    elif len(sel_team) != 0:
-        df_team = df[df['Squad'].isin(sel_team)]
-
+    df_country = multi_filter(df, sel_country, 'Nation')    
+    df_league = multi_filter(df, sel_league, 'League')
+    df_team = multi_filter(df, sel_team, 'Squad')
     df_player = multi_filter(df, sel_player, 'Player')
 
-    df_games = df[df['90s'].between(slider_games[0],slider_games[1])]
+    df_games = df[df['Minutes played divided by 90'].between(slider_games[0],slider_games[1])]
 
     general_select = df[df.isin(df_country) & df.isin(df_league) & df.isin(df_team) & df.isin(df_player) & df.isin(df_games)].dropna()
 
@@ -71,13 +59,13 @@ def main():
         st.title("Defense")
         st.write("\n")
         st.header("Tackle")
-        explore_df = slide_scatter(general_select, 'Tkl', 'TklW', check_label, by_color)
+        slide_scatter(general_select, 'Tackles/90', 'Tackles Won/90', check_label, by_color)
         st.write("\n")
         st.header("Pressing")
-        explore_df = slide_scatter(general_select, 'Press_Succ%', 'Press', check_label, by_color)
+        slide_scatter(general_select, 'Successful Pressures %', 'Pressures/90', check_label, by_color)
         st.write("\n")
         st.header("Aerial Duels")
-        explore_df = slide_scatter(general_select, 'Aerial_Won%', 'Aerial_Won', check_label, by_color)
+        slide_scatter(general_select, 'Aerials won %', 'Aerials won/90', check_label, by_color)
 	
 
 # Page 3    
@@ -85,8 +73,7 @@ def main():
         st.title("Data Exploration")
         x_axis = st.selectbox("Choose a variable for the x-axis", df.columns, index=11)
         y_axis = st.selectbox("Choose a variable for the y-axis", df.columns, index=12)
-        explore_df = slide_scatter(general_select, x_axis, y_axis, check_label, by_color)
-        st.write(explore_df)
+        slide_scatter(general_select, x_axis, y_axis, check_label, by_color)
 	
 	
 # Bottom page
@@ -122,22 +109,30 @@ def load_data(url, information):
 def Please_wait_load_data():
     info = load_data('https://widgets.sports-reference.com/wg.fcgi?css=1&site=fb&url=%2Fen%2Fcomps%2FBig5%2Fshooting%2Fplayers%2FBig-5-European-Leagues-Stats&div=div_stats_shooting', information = True)
     shot = load_data('https://widgets.sports-reference.com/wg.fcgi?css=1&site=fb&url=%2Fen%2Fcomps%2FBig5%2Fshooting%2Fplayers%2FBig-5-European-Leagues-Stats&div=div_stats_shooting', information = False).iloc[:,:8].drop(labels=['Sh/90', 'SoT/90'], axis=1)
-    passes = load_data('https://widgets.sports-reference.com/wg.fcgi?css=1&site=fb&url=%2Fen%2Fcomps%2FBig5%2Fpassing%2Fplayers%2FBig-5-European-Leagues-Stats&div=div_stats_passing', information = False).drop(labels=['Ast', 'xA', 'A-xA'], axis=1)
+    passes = load_data('https://widgets.sports-reference.com/wg.fcgi?css=1&site=fb&url=%2Fen%2Fcomps%2FBig5%2Fpassing%2Fplayers%2FBig-5-European-Leagues-Stats&div=div_stats_passing', information = False).drop(labels=['xA', 'A-xA'], axis=1)
     creation = load_data('https://widgets.sports-reference.com/wg.fcgi?css=1&site=fb&url=%2Fen%2Fcomps%2FBig5%2Fgca%2Fplayers%2FBig-5-European-Leagues-Stats&div=div_stats_gca', information = False).drop(labels=['SCA90','Sh', 'Fld', 'Def','GCA90','OG'], axis=1)
+    dribble = load_data('https://widgets.sports-reference.com/wg.fcgi?css=1&site=fb&url=%2Fen%2Fcomps%2FBig5%2Fpossession%2Fplayers%2FBig-5-European-Leagues-Stats&div=div_stats_possession', information = False).loc[:,['Touches', 'Succ', 'Att', 'Succ%', 'TotDist', 'PrgDist']]
     defense = load_data('https://widgets.sports-reference.com/wg.fcgi?css=1&site=fb&url=%2Fen%2Fcomps%2FBig5%2Fdefense%2Fplayers%2FBig-5-European-Leagues-Stats&div=div_stats_defense', information = False).loc[:,['Tkl', 'TklW', 'Press', 'Succ', '%', 'Int']]
-    dribble = load_data('https://widgets.sports-reference.com/wg.fcgi?css=1&site=fb&url=%2Fen%2Fcomps%2FBig5%2Fpossession%2Fplayers%2FBig-5-European-Leagues-Stats&div=div_stats_possession', information = False).loc[:,['Touches', 'Succ', 'Att', 'Succ%', 'Carries', 'TotDist', 'PrgDist']]
     fun = load_data('https://widgets.sports-reference.com/wg.fcgi?css=1&site=fb&url=%2Fen%2Fcomps%2FBig5%2Fmisc%2Fplayers%2FBig-5-European-Leagues-Stats&div=div_stats_misc', information = False).loc[:,['CrdY', 'CrdR', 'Fls', 'Fld', 'Crs', 'Won', 'Lost', 'Won%']]
     df = pd.concat([info, shot, passes, creation, dribble, defense, fun], axis=1)
-    df.columns = ['Player', 'Nation', 'Pos', 'Squad', 'Comp', 'Age', '90s',
-              'Gls', 'Sh', 'SoT', 'SoT%', 'G/Sh', 'G/SoT',
-              'Pass_Cmp', 'Pass_Att', 'Pass_Cmp%', 'TotDist', 'PrgDist', 'sCmp', 'sAtt', 'sCmp%', 'sCmp', 'sAtt', 'sCmp%', 'sCmp', 'sAtt', 'sCmp%', 'KP', '1/3', 'PPA', 'CrsPA', 'Prog',
-              'SCA', 'SCA_PassLive', 'SCA_PassDead', 'SCA_Drib', 'GCA', 'GCA_PassLive', 'GCA_PassDead', 'GCA_Drib',
-              'Touches', 'Drib_Succ', 'Drib_Att', 'Drib_Succ%', 'Carries', 'Drib_TotDist', 'Drib_PrgDist',
-              'Tkl', 'sTkl', 'TklW', 'Press', 'Press_Succ', 'Press_Succ%', 'Int', 
-              'CrdY', 'CrdR', 'Fls', 'Fld', 'Crs', 'Aerial_Won', 'Aerial_Lost', 'Aerial_Won%']
+    df.columns = ['Player', 'Nation', 'Pos', 'Squad', 'League', 'Age', 'Minutes played divided by 90',
+              'Goals', 'Shots', 'Shots on Target', 'Shots on Target %', 'Goals/Shot', 'Goals/Shot on Target',
+              'Passes Completed', 'Passes Attempted', 'Pass Completion %', 'Passes Total Distance (yd)', 'Passes Progressive Distance (yd)', 'sCmp', 'sAtt', 'sCmp%', 'sCmp', 'sAtt', 'sCmp%', 'sCmp', 'sAtt', 'sCmp%', 'Assists', 'Key Passes', 'Passes into Final Third', 'Passes into Penalty Area', 'Crosses into Penalty Area', 'Progressive Passes',
+              'Shot-Creating Actions', 'Passes Live lead to SCA', 'Passes Dead lead to SCA', 'Dribbles lead to SCA', 'Goal-Creating Actions', 'Passes Live lead to GCA', 'Passes Dead lead to GCA', 'Dribbles lead to GCA',
+              'Touches', 'Dribbles Completed', 'Dribbles Attempted', 'Dribble Completion %', 'Distance with Ball (yd)', 'Progressive Distance with Ball (yd)',
+              'Tackles', 'sTkl', 'Tackles Won', 'Pressures', 'Successful Pressures', 'Successful Pressures %', 'Interceptions', 
+              'Yellow Cards', 'Red Cards', 'Fouls Committed', 'Fouls Drawn', 'Crosses', 'Aerials won', 'Aerials lost', 'Aerials won %']
     df = df.drop(labels=['sCmp', 'sAtt', 'sCmp%', 'sTkl'], axis=1)
-    df["None"] = ""
-    return df
+    exclude = ['Shots on Target %', 'Goals/Shot', 'Goals/Shot on Target', 'Pass Completion %', 'Dribble Completion %', 'Successful Pressures %', 'Aerials won %']
+    per90 = df.iloc[:,7:].loc[:, ~df.iloc[:,7:].columns.isin(exclude)].div(df['Minutes played divided by 90'], axis=0)
+    per90 = per90.replace([np.inf], np.nan).fillna(0)
+    per90names = []
+    for i in range(len(list(per90.columns))):
+        per90names.append(list(per90.columns)[i] + "/90")
+    per90.columns = per90names
+    final = pd.concat([df,per90], axis = 1)
+    final["None"] = ""
+    return final
 
 def multi_filter(df, sel, var):
     if len(sel) == 0:
@@ -155,6 +150,7 @@ def scatter_plot(df, x_axis, y_axis, label, color):
     template = "simple_white",
     )
     graph.update_traces(textposition='top center')
+    graph.update_layout(uniformtext_minsize=12, uniformtext_mode='show')
 
     st.write(graph)
 
