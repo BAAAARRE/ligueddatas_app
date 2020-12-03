@@ -16,13 +16,14 @@ def main():
 	page_title='LiguedDatas App',  # String or None. Strings get appended with "• Streamlit". 
 	page_icon=None,  # String, anything supported by st.image, or None.
     )
+    
 
 # Load Data
     df = Please_wait_load_data()
 
 # Set Sidebar
     st.sidebar.title('Navigation onglet')
-    page = st.sidebar.selectbox("Choose a page", ["Homepage", "Defense", "Exploration"])
+    page = st.sidebar.selectbox("Choose a page", ["Homepage", "Defense", "Passes", "Dribbles", "Shots", "Exploration"])
     st.sidebar.title('Generals filters')
     sel_country = st.sidebar.multiselect('Select country', sorted(df['Nation'].unique()))
     sel_league = st.sidebar.multiselect('Select league', sorted(df['League'].unique()))
@@ -53,7 +54,6 @@ def main():
         st.write('You can navigate on page with the sidebar on the left')
 
 
-
 # Page 2
     elif page == "Defense":
         st.title("Defense")
@@ -66,9 +66,48 @@ def main():
         st.write("\n")
         st.header("Aerial Duels")
         slide_scatter(general_select, 'Aerials won %', 'Aerials won/90', check_label, by_color)
+
+
+# Page 3
+    elif page == "Passes":
+        st.title("Passes")
+        st.write("\n")
+        st.header("Passes Completion")
+        slide_scatter(general_select, 'Pass Completion %', 'Passes Completed/90', check_label, by_color)
+        st.write("\n")
+        st.header("Forwards Passes")
+        slide_scatter(general_select, 'Progressive Passes/90', 'Passes into Final Third/90', check_label, by_color)
+        st.write("\n")
+        st.header("Offensives Passes")
+        slide_scatter(general_select, 'Assists/90', 'Key Passes/90', check_label, by_color)
 	
 
-# Page 3    
+# Page 4
+    elif page == "Dribbles":
+        st.title("Dribbles")
+        st.write("\n")
+        st.header("Dribbles Completion")
+        slide_scatter(general_select, 'Dribble Completion %', 'Dribbles Completed/90', check_label, by_color)
+        st.write("\n")
+        st.header("Forward touches")
+        slide_scatter(general_select, 'Forward dribbling %', 'Progressive Distance with Ball (yd)/90', check_label, by_color)
+        st.write("\n")
+        st.header("Keys Dribbles")
+        slide_scatter(general_select, 'Dribbles lead to GCA/90', 'Dribbles lead to SCA/90', check_label, by_color)
+
+
+# Page 5
+    elif page == "Shots":
+        st.title("hots")
+        st.write("\n")
+        st.header("Precision shots")
+        slide_scatter(general_select, 'Shots on Target %', 'Shots on Target/90', check_label, by_color)
+        st.write("\n")
+        st.header("Forward touches")
+        slide_scatter(general_select, 'Goals/90', 'Goals/Shot', check_label, by_color)
+
+
+# Page 6    
     elif page == "Exploration":
         st.title("Data Exploration")
         x_axis = st.selectbox("Choose a variable for the x-axis", df.columns, index=11)
@@ -123,7 +162,8 @@ def Please_wait_load_data():
               'Tackles', 'sTkl', 'Tackles Won', 'Pressures', 'Successful Pressures', 'Successful Pressures %', 'Interceptions', 
               'Yellow Cards', 'Red Cards', 'Fouls Committed', 'Fouls Drawn', 'Crosses', 'Aerials won', 'Aerials lost', 'Aerials won %']
     df = df.drop(labels=['sCmp', 'sAtt', 'sCmp%', 'sTkl'], axis=1)
-    exclude = ['Shots on Target %', 'Goals/Shot', 'Goals/Shot on Target', 'Pass Completion %', 'Dribble Completion %', 'Successful Pressures %', 'Aerials won %']
+    df["Forward dribbling %"] = (df['Progressive Distance with Ball (yd)']/df['Distance with Ball (yd)'])*100
+    exclude = ['Shots on Target %', 'Goals/Shot', 'Goals/Shot on Target', 'Pass Completion %', 'Dribble Completion %', 'Forward dribbling %', 'Successful Pressures %', 'Aerials won %']
     per90 = df.iloc[:,7:].loc[:, ~df.iloc[:,7:].columns.isin(exclude)].div(df['Minutes played divided by 90'], axis=0)
     per90 = per90.replace([np.inf], np.nan).fillna(0)
     per90names = []
@@ -131,6 +171,7 @@ def Please_wait_load_data():
         per90names.append(list(per90.columns)[i] + "/90")
     per90.columns = per90names
     final = pd.concat([df,per90], axis = 1)
+
     final["None"] = ""
     return final
 
@@ -146,12 +187,11 @@ def scatter_plot(df, x_axis, y_axis, label, color):
     graph = px.scatter(df, x = x_axis, y = y_axis,
     text = label, 
     hover_name="Player",
+    hover_data=['Squad','Minutes played divided by 90'],
     color = color,
     template = "simple_white",
     )
     graph.update_traces(textposition='top center')
-    graph.update_layout(uniformtext_minsize=12, uniformtext_mode='show')
-
     st.write(graph)
 
 def slide_scatter(df, x_axis, y_axis, check, color_choice):
@@ -174,9 +214,6 @@ def slide_scatter(df, x_axis, y_axis, check, color_choice):
         
         with st.beta_expander("See data"):
             st.write(explore_df[['Player', x_axis, y_axis]])
-        return explore_df
-
-
 
 if __name__ == "__main__":
     main()
