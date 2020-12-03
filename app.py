@@ -98,12 +98,12 @@ def main():
 
 # Page 5
     elif page == "Shots":
-        st.title("hots")
+        st.title("Shots")
         st.write("\n")
         st.header("Precision shots")
         slide_scatter(general_select, 'Shots on Target %', 'Shots on Target/90', check_label, by_color)
         st.write("\n")
-        st.header("Forward touches")
+        st.header("Efficiency shots")
         slide_scatter(general_select, 'Goals/90', 'Goals/Shot', check_label, by_color)
 
 
