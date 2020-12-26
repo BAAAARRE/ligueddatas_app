@@ -144,7 +144,7 @@ def load_data(url, information):
     else: 
         return values
 
-@st.cache
+@st.cache(ttl = 60*60)
 def Please_wait_load_data():
     info = load_data('https://widgets.sports-reference.com/wg.fcgi?css=1&site=fb&url=%2Fen%2Fcomps%2FBig5%2Fshooting%2Fplayers%2FBig-5-European-Leagues-Stats&div=div_stats_shooting', information = True)
     shot = load_data('https://widgets.sports-reference.com/wg.fcgi?css=1&site=fb&url=%2Fen%2Fcomps%2FBig5%2Fshooting%2Fplayers%2FBig-5-European-Leagues-Stats&div=div_stats_shooting', information = False).iloc[:,:8].drop(labels=['Sh/90', 'SoT/90'], axis=1)
